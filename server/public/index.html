@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#171a17" />
+    <title>Intelligenti 管理コンソール</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23171a17'/%3E%3Crect x='10' y='10' width='44' height='44' fill='%23d9ff50'/%3E%3Cpath d='M29 21h6v22h-6z' fill='%23171a17'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/admin/styles.css?v=20260904-3" />
+    <link rel="stylesheet" href="/admin/map-editor.css?v=20260902-7" />
+  </head>
+  <body>
+    <section class="login-shell" id="loginView">
+      <div class="login-stage" aria-hidden="true">
+        <p class="stage-code">INTELLIGENTI / RETAIL OPERATING SYSTEM / 01</p>
+        <div class="stage-wordmark"><span>INTEL</span><span>LIGENTI</span></div>
+        <div class="shelf-scene">
+          <div class="shelf-code">AISLE A</div>
+          <div class="shelf-row"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="shelf-code">AISLE B</div>
+          <div class="shelf-row offset"><i></i><i></i><i></i><i></i></div>
+          <div class="scan-beam"></div>
+        </div>
+      </div>
+      <form class="login-card" id="loginForm">
+        <div class="login-index"><span>STORE CONSOLE</span><b>01</b></div>
+        <h1>店舗管理へ<br />ログイン</h1>
+        <label class="field">
+          <span>管理パスワード</span>
+          <input id="passwordInput" type="password" autocomplete="current-password" required autofocus />
+        </label>
+        <button class="primary-button full" type="submit">管理画面を開く</button>
+        <p class="form-error" id="loginError" role="alert"></p>
+      </form>
+    </section>
+
+    <div class="app-shell is-hidden" id="appView">
+      <aside class="sidebar">
+        <div class="brand-lockup">
+          <div class="brand-mark small">I</div>
+          <div><strong>Intelligenti</strong><span>STORE / 01</span></div>
+        </div>
+        <nav aria-label="管理メニュー">
+          <button class="nav-item is-active" data-view="products"><span aria-hidden="true">01</span>商品台帳</button>
+          <button class="nav-item" data-view="shelves"><span aria-hidden="true">02</span>売場構成</button>
+          <button class="nav-item" data-view="map"><span aria-hidden="true">03</span>店舗マップ</button>
+        </nav>
+        <div class="sidebar-foot">
+          <div class="server-state"><i id="serverDot"></i><span id="serverText">接続確認中</span></div>
+          <button class="text-button" id="logoutButton">ログアウト</button>
+        </div>
+      </aside>
+
+      <main>
+        <div class="system-line">
+          <span>INTELLIGENTI STORE NETWORK</span>
+          <span class="system-line-state"><i></i> OPERATIONAL</span>
+        </div>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="pageContext">PRODUCT LEDGER / 商品・在庫</p>
+            <h1 id="pageTitle">商品台帳</h1>
+          </div>
+          <div class="top-actions">
+            <button class="reader-connect" id="readerConnectButton" type="button">
+              <i aria-hidden="true"></i>
+              <span id="readerConnectText">NFCリーダーへ接続</span>
+            </button>
+            <button class="secondary-button" id="readerSettingsButton" type="button">接続設定</button>
+            <label class="search-box" id="searchBox">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m16 16 4 4"></path></svg>
+              <input id="searchInput" type="search" placeholder="商品名・IDで検索" />
+            </label>
+            <button class="primary-button" id="newProductButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>商品を登録</button>
+          </div>
+        </header>
+
+        <section class="view" id="productsView">
+          <div class="metrics" aria-label="商品サマリー">
+            <article><span>PRODUCTS / 登録商品</span><strong id="productCount">—</strong><small>件</small></article>
+            <article><span>STOCK / 総在庫</span><strong id="stockCount">—</strong><small>点</small></article>
+            <article><span>AISLES / 登録売場</span><strong id="shelfCount">—</strong><small>か所</small></article>
+            <article class="signal-card"><span>AR CHANNEL</span><strong><i></i> 接続準備済み</strong><small>BEAMPRO-01</small></article>
+          </div>
+
+          <section class="content-card">
+            <div class="section-heading">
+              <div><p class="section-code">LEDGER / LIVE DATA</p><h2>商品一覧</h2></div>
+              <div class="ledger-focus"><span>FOCUS</span><strong id="liveSelection">商品をポイントすると詳細を表示</strong><b class="result-count" id="resultCount"></b></div>
+            </div>
+            <div class="table-wrap">
+              <table class="product-table">
+                <colgroup><col class="product-col" /><col class="price-col" /><col class="stock-col" /><col class="shelf-col" /><col class="status-col" /><col class="action-col" /></colgroup>
+                <thead><tr><th>商品</th><th>価格</th><th>在庫</th><th>売場</th><th>状態</th><th></th></tr></thead>
+                <tbody id="productRows"></tbody>
+              </table>
+            </div>
+            <div class="empty-state is-hidden" id="productEmpty">
+              <strong>商品が見つかりません</strong>
+            </div>
+          </section>
+        </section>
+
+        <section class="view is-hidden" id="shelvesView">
+          <div class="split-layout">
+            <section class="content-card">
+              <div class="section-heading"><div><p class="section-code">STORE MAP / PHYSICAL</p><h2>売場・棚一覧</h2></div></div>
+              <div class="shelf-grid" id="shelfGrid"></div>
+            </section>
+            <form class="content-card shelf-form" id="shelfForm" aria-busy="false">
+              <div class="section-heading shelf-form-heading">
+                <div><p class="section-code" id="shelfFormCode">NEW AISLE</p><h2 id="shelfFormTitle">売場を登録</h2></div>
+                <button class="text-button shelf-reset is-hidden" id="newShelfButton" type="button">新規登録に戻す</button>
+              </div>
+              <p class="shelf-form-help">棚名とゾーンを登録。位置と大きさは店舗マップで編集。</p>
+              <label class="field"><span>売場ID</span><input name="id" placeholder="SHELF-A02" required pattern="[A-Za-z0-9_-]+" maxlength="32" /></label>
+              <label class="field"><span>表示名</span><input name="name" placeholder="飲料棚 A-02" maxlength="100" required /></label>
+              <label class="field"><span>ゾーン</span><input name="zone" placeholder="飲料売場" maxlength="100" /></label>
+              <p class="assignment-status" id="assignmentStatus" role="status" aria-live="polite"></p>
+              <div class="shelf-form-actions">
+                <button class="primary-button" id="saveShelfButton" type="submit">売場を登録</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="view is-hidden" id="mapView">
+          <section class="map-editor" aria-label="店舗マップ編集">
+            <header class="map-toolbar">
+              <div class="map-add-controls">
+                <label class="compact-select"><span>配置する棚</span><select id="mapShelfSource"></select></label>
+                <button class="map-tool primary-button" id="addMapShelf" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM8 7V4m8 3V4M8 17v3m8-3v3"></path></svg>棚を置く
+                </button>
+                <button class="map-tool secondary-button" id="addMapMarker" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h5v5H6zM13 4h5v5h-5zM6 11h5v5H6zM14 12h4v4h-4zM6 18h3m3 0h6"></path></svg>QRを置く
+                </button>
+                <button class="map-tool secondary-button" id="drawMapPath" type="button" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18 10 7l4 8 5-10M3 18h4m10-13h4"></path></svg>通路を描く
+                </button>
+                <label class="map-length-field"><span>通路の長さ（m）</span><input id="mapPathLength" type="number" min="0.25" max="200" step="0.25" inputmode="decimal" placeholder="自由" /></label>
+                <button class="map-tool secondary-button" id="toggleMapMeasures" type="button" aria-pressed="true">寸法を隠す</button>
+              </div>
+              <div class="map-history-controls">
+                <button class="map-icon-button" id="mapUndo" type="button" aria-label="元に戻す" title="元に戻す">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 7-5 5 5 5M5 12h8a6 6 0 0 1 6 6"></path></svg>
+                </button>
+                <button class="map-icon-button" id="mapRedo" type="button" aria-label="やり直す" title="やり直す">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5m4-5h-8a6 6 0 0 0-6 6"></path></svg>
+                </button>
+                <span class="map-save-state" id="mapSaveState" role="status" aria-live="polite">読み込み中</span>
+                <button class="primary-button" id="saveStoreMap" type="button">マップを保存</button>
+              </div>
+            </header>
+
+            <div class="map-workspace">
+              <section class="map-stage-card" aria-label="店舗を上から見た配置図">
+                <div class="map-stage-help" id="mapStageHelp">棚・QRを配置。通路はドラッグで作成</div>
+                <div class="store-map-stage" id="storeMapStage" tabindex="0" aria-label="店舗マップ。選択中の物体は矢印キーで移動可能">
+                  <div class="map-size-badge" id="mapSizeBadge" aria-live="polite"></div>
+                  <svg class="map-path-layer" id="mapPathLayer" aria-hidden="true"></svg>
+                  <div class="map-object-layer" id="mapObjectLayer"></div>
+                  <div class="map-empty-guide" id="mapEmptyGuide">
+                    <strong>棚を配置して開始</strong>
+                    <span>上の「棚を置く」から追加</span>
+                  </div>
+                </div>
+                <div class="map-legend" aria-label="マップの凡例">
+                  <span><i class="legend-shelf"></i>棚</span><span><i class="legend-marker"></i>現在地QR</span><span><i class="legend-path"></i>歩ける通路</span><span><i class="legend-route"></i>案内経路</span>
+                </div>
+              </section>
+
+              <aside class="map-inspector" aria-live="polite">
+                <div class="map-inspector-empty" id="mapInspectorEmpty">
+                  <p class="section-code">SELECT AN OBJECT</p>
+                  <h2>編集するものを選択</h2>
+                  <p>棚・QR・通路を選択して編集</p>
+                </div>
+                <form id="mapShelfInspector" class="is-hidden">
+                  <p class="section-code">SHELF</p><h2>棚の設定</h2>
+                  <label class="field"><span>棚</span><select name="shelfId"></select></label>
+                  <div class="friendly-control"><span>棚の大きさ</span><div class="stepper-row"><button type="button" data-resize="smaller">小さく</button><button type="button" data-resize="wider">横長に</button><button type="button" data-resize="deeper">奥行きを広げる</button></div></div>
+                  <div class="friendly-control"><span>商品を取る側</span><div class="access-side-grid" role="group" aria-label="商品を取る側"><button type="button" data-side="top">上</button><button type="button" data-side="left">左</button><button type="button" data-side="right">右</button><button type="button" data-side="bottom">下</button></div></div>
+                  <button class="secondary-button full" type="button" id="rotateMapShelf">棚を90°回転</button>
+                  <button class="danger-button full map-delete" type="button" id="deleteMapShelf">マップから外す</button>
+                </form>
+                <form id="mapMarkerInspector" class="is-hidden">
+                  <p class="section-code">LOCATION QR</p><h2>現在地QRの設定</h2>
+                  <label class="field"><span>表示名</span><input name="label" maxlength="100" placeholder="入口・飲料通路など" /></label>
+                  <label class="field"><span>QR ID</span><input name="markerId" maxlength="64" pattern="[A-Za-z0-9_-]+" /></label>
+                  <p class="inspector-help">矢印は「人がこのQRを読むときに向く方向」。現地でQRに正対する向きに合わせる。</p>
+                  <button class="secondary-button full" type="button" id="rotateMapMarker">向きを90°回転</button>
+                  <button class="secondary-button full" type="button" id="printMapMarker">このQRを印刷</button>
+                  <button class="danger-button full map-delete" type="button" id="deleteMapMarker">マップから外す</button>
+                </form>
+                <form id="mapPathInspector" class="is-hidden">
+                  <p class="section-code">WALKABLE PATH</p><h2>通路の設定</h2>
+                  <p class="inspector-help">線で全体移動、両端の丸で長さ・方向を変更。</p>
+                  <div class="path-value-grid">
+                    <label class="field"><span>長さ（m）</span><input name="pathLength" type="number" min="0.25" max="200" step="0.01" inputmode="decimal" /></label>
+                    <label class="field"><span>角度（°）</span><input name="pathAngle" type="number" min="-180" max="180" step="1" inputmode="decimal" /></label>
+                  </div>
+                  <p class="inspector-help">角度：右0°／下90°。Shift＋端のドラッグで45°刻み。</p>
+                  <button class="danger-button full map-delete" type="button" id="deleteMapPath">この通路を削除</button>
+                </form>
+                <details class="map-size-settings">
+                  <summary>店舗サイズを変更</summary>
+                  <div><label class="field"><span>横幅のおおよそ（m）</span><input id="mapWidth" type="number" min="4" max="200" step="1" /></label><label class="field"><span>奥行きのおおよそ（m）</span><input id="mapDepth" type="number" min="4" max="200" step="1" /></label></div>
+                </details>
+              </aside>
+            </div>
+
+            <section class="route-tester">
+              <div><p class="section-code">ROUTE PREVIEW</p><h2>案内テスト</h2><p>現在地QRと商品を選び、実際の案内経路を確認。</p></div>
+              <label class="compact-select"><span>現在地</span><select id="routeStartMarker"></select></label>
+              <label class="compact-select"><span>探す商品</span><select id="routeTargetProduct"></select></label>
+              <button class="secondary-button" id="previewRoute" type="button">経路を表示</button>
+              <output id="routePreviewResult" aria-live="polite"></output>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="productDialog">
+      <form method="dialog" class="dialog-card" id="productForm">
+        <div class="dialog-head">
+          <div><p class="section-code">PRODUCT RECORD</p><h2 id="dialogTitle">商品を登録</h2></div>
+          <button class="icon-button" type="button" id="closeDialog" aria-label="閉じる">×</button>
+        </div>
+        <div class="form-grid">
+          <label class="field full-span"><span>商品名</span><input name="name" placeholder="有機緑茶 500ml" maxlength="120" required /></label>
+          <label class="field"><span>商品ID（13文字以内）</span><input name="id" placeholder="自動生成" maxlength="13" pattern="[A-Za-z0-9_-]{1,13}" /></label>
+          <label class="field"><span>売場</span><select name="shelfId"><option value="">未配置</option></select></label>
+          <label class="field"><span>価格（円）</span><input name="priceYen" type="number" min="0" step="1" required /></label>
+          <label class="field"><span>在庫数</span><input name="stock" type="number" min="0" step="1" required /></label>
+          <fieldset class="placement-fieldset full-span">
+            <legend>棚の中でのAR強調位置</legend>
+            <p>棚の中心から商品の中心までの距離（m）。</p>
+            <div class="coordinate-grid">
+              <label class="field"><span>左右 X（右が＋）</span><input name="offsetX" type="number" step="0.01" value="0" inputmode="decimal" required /></label>
+              <label class="field"><span>上下 Y（上が＋）</span><input name="offsetY" type="number" step="0.01" value="0" inputmode="decimal" required /></label>
+              <label class="field"><span>奥行 Z（手前が＋）</span><input name="offsetZ" type="number" step="0.01" value="0" inputmode="decimal" required /></label>
+            </div>
+          </fieldset>
+          <label class="field full-span"><span>商品説明</span><textarea name="description" rows="4" maxlength="5000" placeholder="産地・特徴・アレルギー情報など"></textarea></label>
+          <fieldset class="product-image-fieldset full-span">
+            <legend>商品画像</legend>
+            <div class="product-image-upload">
+              <div class="product-image-preview" id="productImagePreview">
+                <img id="productImagePreviewImage" alt="" />
+                <div class="product-image-placeholder" id="productImagePlaceholder" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 15l4-4 4 4 2-2 6 6M15.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" /></svg>
+                  <span>NO IMAGE</span>
+                </div>
+              </div>
+              <div class="product-image-controls">
+                <label class="secondary-button image-file-button">画像を選択
+                  <input id="productImageInput" name="productImage" type="file" accept="image/jpeg,image/png,image/webp" />
+                </label>
+                <button class="text-button product-image-remove" id="removeProductImage" type="button">画像を削除</button>
+                <p class="product-image-status" id="productImageStatus" role="status" aria-live="polite">JPEG・PNG・WebP / 6MBまで</p>
+              </div>
+            </div>
+            <input name="imageUrl" type="hidden" />
+          </fieldset>
+        </div>
+        <section class="tag-writer is-hidden" id="tagWriterPanel" aria-live="polite">
+          <div class="tag-writer-icon" aria-hidden="true">N</div>
+          <div>
+            <strong>NFC商品タグ</strong>
+            <p id="tagWriterStatus">リーダー接続後、この商品IDをタグへ書込み可能。</p>
+          </div>
+        </section>
+        <div class="dialog-actions">
+          <button class="danger-button is-hidden" type="button" id="deleteProductButton">削除</button>
+          <div class="action-spacer"></div>
+          <button class="secondary-button" type="button" id="guideProductButton">ゴーグルへ案内</button>
+          <button class="secondary-button is-hidden" type="button" id="writeTagButton">NFCタグへ書き込む</button>
+          <button class="danger-button is-hidden" type="button" id="cancelTagWriteButton">書込みをキャンセル</button>
+          <button class="primary-button" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="readerSettingsDialog">
+      <form class="dialog-card" id="readerSettingsForm" aria-busy="false">
+        <div class="dialog-head">
+          <div><p class="section-code">READER NETWORK</p><h2>NFCリーダーの接続設定</h2></div>
+          <button class="icon-button" type="button" id="closeReaderSettings" aria-label="閉じる">×</button>
+        </div>
+        <div class="reader-setup-steps" aria-label="設定手順">
+          <span><b>1</b>リーダー接続</span><span><b>2</b>Wi-Fi保存</span><span><b>3</b>API接続</span>
+        </div>
+        <div class="form-grid">
+          <label class="field full-span"><span>Wi-Fi名（SSID）</span><input name="ssid" value="tkgon iPhone" autocomplete="off" required maxlength="32" /></label>
+          <label class="field full-span"><span>Wi-Fiパスワード</span><input name="wifiPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="63" /></label>
+          <div class="reader-api-destination full-span"><span>送信先</span><strong>nfc-api.tkgon.net</strong><small>認証情報は管理サーバー側で設定</small></div>
+          <p class="reader-setup-status full-span" id="readerSetupStatus" role="status" aria-live="polite">Wi-Fiは初回保存後、自動接続。</p>
+        </div>
+        <div class="dialog-actions">
+          <button class="secondary-button" type="button" id="cancelReaderSettings">キャンセル</button>
+          <div class="action-spacer"></div>
+          <button class="primary-button" type="submit" id="saveReaderSettings">リーダーへ保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/admin/app.js?v=20260904-6" defer></script>
+    <script src="/admin/map-editor.js?v=20260902-8" defer></script>
+  </body>
+</html>

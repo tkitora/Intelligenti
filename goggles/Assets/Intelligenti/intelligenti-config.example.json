@@ -1,0 +1,11 @@
+{
+  "apiBaseUrl": "https://nfc-api.tkgon.net",
+  "mqttHost": "",
+  "mqttPort": 1884,
+  "mqttUsername": "intelligenti",
+  "mqttPassword": "replace_with_deployment_password",
+  "goggleApiKey": "replace_with_device_route_key",
+  "scanTopic": "intelligenti/readers/+/scan",
+  "goggleId": "BEAMPRO-01",
+  "targetTopic": "intelligenti/goggles/BEAMPRO-01/target"
+}

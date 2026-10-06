@@ -1,0 +1,32 @@
+# Compatibility entrypoint for the existing Cloudflare Tunnel route.
+# The tunnel targets localhost:3000; the canonical Intelligenti API runs on
+# the same home server at 192.168.11.7:3100.
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    image: alpine/socat:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    command:
+      - "TCP-LISTEN:3000,fork,reuseaddr"
+      - "TCP-CONNECT:192.168.11.7:3100"
+
+volumes:
+  mysql_data:

@@ -1,0 +1,62 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - intelligenti-mysql:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "${BIND_HOST}:${MQTT_PORT}:1883"
+      - "${BIND_HOST}:${MQTT_WEBSOCKET_PORT}:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/passwords:/mosquitto/config/passwords:ro
+      - intelligenti-mosquitto-data:/mosquitto/data
+
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${BIND_HOST}:${API_PORT}:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      ADMIN_UI_PASSWORD: ${ADMIN_UI_PASSWORD}
+      GOGGLE_API_KEY: ${GOGGLE_API_KEY:-}
+      READER_API_KEY: ${READER_API_KEY}
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-https://nfc-api.tkgon.net}
+      UPLOAD_DIR: /app/uploads
+      MQTT_URL: mqtt://mosquitto:1883
+      MQTT_USERNAME: ${MQTT_USERNAME}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    volumes:
+      - intelligenti-uploads:/app/uploads
+
+volumes:
+  intelligenti-mysql:
+  intelligenti-mosquitto-data:
+  intelligenti-uploads:
